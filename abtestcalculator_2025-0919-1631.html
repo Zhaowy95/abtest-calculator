@@ -1,0 +1,995 @@
+    <!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AB实验P值计算工具 - 专业版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .input-focus {
+            transition: all 0.2s ease;
+        }
+        .input-focus:focus {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+        }
+        .result-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .compact-input {
+            height: 2.5rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div class="container mx-auto px-4 py-4">
+        <!-- 头部标题 -->
+        <div class="text-center mb-4">
+            <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">
+                AB实验P值计算工具
+            </h1>
+            <p class="text-lg text-white opacity-90">
+                全网最高效P值计算工具！愿每个打工人效率拉满，早点下班！
+            </p>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="max-w-7xl mx-auto">
+            <!-- 数据输入和识别结果区域 -->
+            <div class="bg-white rounded-xl card-shadow p-6 mb-4">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    数据输入与识别
+                </h2>
+                
+                <!-- 左右分栏布局 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 左侧：数据输入区域 -->
+                    <div class="flex flex-col min-h-[200px]">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            数据输入
+                        </h3>
+                        
+                        <div class="flex-1 flex flex-col justify-between">
+                            <div>
+                                <textarea 
+                                    id="dataInput" 
+                                    class="w-full h-20 px-3 py-2 border-2 border-gray-300 rounded-lg input-focus focus:border-blue-500 focus:outline-none text-base"
+                                    placeholder="请在此处粘贴您的AB实验数据，例如：&#10;1500  100  1489  89&#10;&#10;支持格式：空格分隔、换行分隔、制表符分隔"
+                                    autofocus
+                                ></textarea>
+                            </div>
+
+                            <!-- 紧凑的输入区域 -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        实验组样本量/全部样本量
+                                    </label>
+                                    <div class="relative">
+                                        <input 
+                                            type="number" 
+                                            id="experimentRatioInput" 
+                                            class="w-full compact-input border-2 border-gray-300 rounded-lg input-focus focus:border-blue-500 focus:outline-none pr-8"
+                                            placeholder="1-99，默认50"
+                                            min="1"
+                                            max="99"
+                                            value="50"
+                                        >
+                                        <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        样本总量
+                                        <span class="text-xs text-gray-500 font-normal">对照组/对照组样本比例</span>
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        id="totalSampleInput" 
+                                        class="w-full compact-input border-2 border-gray-300 rounded-lg input-focus focus:border-blue-500 focus:outline-none"
+                                        placeholder="用于计算转化数增加区间"
+                                        min="0"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：识别结果区域 -->
+                    <div id="recognitionResults" class="hidden flex flex-col min-h-[200px] justify-center">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                            <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            识别结果
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1">
+                            <div class="stat-card text-white rounded-lg p-4 flex flex-col">
+                                <h4 class="text-base font-bold mb-3">A组（对照组）</h4>
+                                <div class="space-y-2 flex-1 flex flex-col justify-center">
+                                    <div class="flex justify-between text-sm">
+                                        <span>进组样本数：</span>
+                                        <span class="font-semibold" id="groupASample">-</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span>转化样本数：</span>
+                                        <span class="font-semibold" id="groupAConvert">-</span>
+                                    </div>
+                                    <div class="flex justify-between text-base">
+                                        <span>转化率：</span>
+                                        <span class="font-bold" id="groupARate">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="result-card text-white rounded-lg p-4 flex flex-col">
+                                <h4 class="text-base font-bold mb-3">B组（实验组）</h4>
+                                <div class="space-y-2 flex-1 flex flex-col justify-center">
+                                    <div class="flex justify-between text-sm">
+                                        <span>进组样本数：</span>
+                                        <span class="font-semibold" id="groupBSample">-</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span>转化样本数：</span>
+                                        <span class="font-semibold" id="groupBConvert">-</span>
+                                    </div>
+                                    <div class="flex justify-between text-base">
+                                        <span>转化率：</span>
+                                        <span class="font-bold" id="groupBRate">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 按钮区域 - 水平排列在中间 -->
+                <div class="flex justify-center gap-3 mt-6">
+                    <button 
+                        id="smartGroupBtn" 
+                        class="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        disabled
+                    >
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        智能分组
+                    </button>
+                    
+                    <button 
+                        id="clearBtn" 
+                        class="px-4 py-2 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-all duration-300 text-sm"
+                    >
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        清空数据
+                    </button>
+                </div>
+            </div>
+
+            <!-- 计算结果和预测区域 -->
+            <div id="resultsSection" class="hidden">
+                <div class="bg-white rounded-xl card-shadow p-6 mb-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                            计算结果与预测
+                        </h2>
+                        <button 
+                            id="copyResultsBtn" 
+                            class="px-3 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all duration-300 text-sm flex items-center"
+                            style="display: none;"
+                        >
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            复制结果
+                        </button>
+                    </div>
+                    
+                    <!-- 左右分栏布局 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- 左侧：统计分析结果 -->
+                        <div class="flex flex-col justify-center">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                                统计分析结果
+                            </h3>
+                            <div class="grid grid-cols-2 gap-3 flex-1">
+                                <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg p-4 text-center">
+                                    <div class="text-sm opacity-90 mb-1">绝对提升</div>
+                                    <div class="text-xl font-bold" id="absoluteImprovement">-</div>
+                                </div>
+                                
+                                <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-4 text-center">
+                                    <div class="text-sm opacity-90 mb-1">相对提升</div>
+                                    <div class="text-xl font-bold" id="relativeImprovement">-</div>
+                                </div>
+                                
+                                <div class="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-lg p-4 text-center">
+                                    <div class="text-sm opacity-90 mb-1">P值</div>
+                                    <div class="text-xl font-bold" id="pValue">-</div>
+                                </div>
+                                
+                                <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg p-4 text-center">
+                                    <div class="text-sm opacity-90 mb-1">置信区间</div>
+                                    <div class="text-base font-bold" id="confidenceInterval">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 右侧：全量同步实验组策略增量效果 -->
+                        <div id="conversionIncreaseSection" style="display: none;" class="flex flex-col">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                                全量同步实验组策略增量效果
+                            </h3>
+                            
+                            <div class="border border-gray-200 rounded-lg p-4 flex-1">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                    <div class="text-center">
+                                        <div class="text-sm text-gray-700 mb-1">实际样本总量</div>
+                                        <div class="text-xl font-bold text-gray-800" id="totalSampleDisplay">-</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-sm text-gray-700 mb-1">转化数增加区间</div>
+                                        <div class="text-base font-bold text-gray-800" id="conversionIncreaseRange">-</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-sm text-gray-700 mb-1">转化数增加数量</div>
+                                        <div class="text-base font-bold text-gray-800" id="conversionIncreaseCount">-</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="border-t border-gray-200 pt-3">
+                                    <h4 class="text-sm font-semibold text-gray-800 mb-1">计算说明</h4>
+                                    <p class="text-sm text-gray-600">
+                                        基于实验组相比对照组的绝对提升值和95%置信区间，计算全量同步实验组策略后，
+                                        在给定样本总量下的转化数增加区间。此预测基于当前AB实验的统计结果。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="text-center mt-6 text-white opacity-75">
+            <p class="text-sm">效率先锋 v1.0 | 开发by独立产品者阿文</p>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="toast">
+        复制成功！
+    </div>
+
+    <!-- 错误提示 -->
+    <div id="errorToast" class="toast" style="background: #ef4444;">
+        错误提示
+    </div>
+
+    <script>
+        // 全局变量
+        let currentData = [];
+        let currentGrouping = null;
+
+        // DOM元素
+        const dataInput = document.getElementById('dataInput');
+        const experimentRatioInput = document.getElementById('experimentRatioInput');
+        const totalSampleInput = document.getElementById('totalSampleInput');
+        const smartGroupBtn = document.getElementById('smartGroupBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const resultsSection = document.getElementById('resultsSection');
+        const recognitionResults = document.getElementById('recognitionResults');
+        const conversionIncreaseSection = document.getElementById('conversionIncreaseSection');
+        const copyResultsBtn = document.getElementById('copyResultsBtn');
+        const toast = document.getElementById('toast');
+        const errorToast = document.getElementById('errorToast');
+
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 缓存计算结果
+        const calculationCache = new Map();
+        const CACHE_SIZE_LIMIT = 100;
+
+        // 创建防抖版本的处理函数
+        const debouncedDataInput = debounce(handleDataInput, 300);
+        const debouncedRatioInput = debounce(handleExperimentRatioInput, 200);
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            focusInput();
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            dataInput.addEventListener('input', debouncedDataInput);
+            dataInput.addEventListener('paste', debouncedDataInput);
+            experimentRatioInput.addEventListener('input', debouncedRatioInput);
+            experimentRatioInput.addEventListener('focus', handleExperimentRatioFocus);
+            totalSampleInput.addEventListener('input', handleTotalSampleInput);
+            totalSampleInput.addEventListener('focus', handleTotalSampleFocus);
+            smartGroupBtn.addEventListener('click', toggleGrouping);
+            clearBtn.addEventListener('click', clearData);
+            copyResultsBtn.addEventListener('click', copyResults);
+        }
+
+        // 处理实验组比例输入
+        function handleExperimentRatioInput() {
+            if (currentData.length === 4) {
+                performSmartGrouping();
+                // 重新计算并更新样本总量
+                if (currentGrouping) {
+                    const experimentRatio = parseFloat(experimentRatioInput.value) / 100;
+                    const calculatedTotalSample = Math.round(currentGrouping.groupA.sample / (1 - experimentRatio));
+                    totalSampleInput.value = calculatedTotalSample;
+                    calculateConversionIncrease(calculatedTotalSample);
+                    showConversionIncreaseSection();
+                }
+            }
+        }
+
+        // 处理实验组比例输入框焦点（点击时清空）
+        function handleExperimentRatioFocus() {
+            // 情况3：用户点击输入框时，自动清空比例数值
+            experimentRatioInput.value = '';
+        }
+
+        // 处理实际样本总量输入框焦点（点击时清空）
+        function handleTotalSampleFocus() {
+            // 用户点击输入框时，自动清空样本总量数值
+            totalSampleInput.value = '';
+        }
+
+        // 处理总样本量输入
+        function handleTotalSampleInput() {
+            const totalSample = parseFloat(totalSampleInput.value);
+            if (totalSample > 0 && currentGrouping) {
+                calculateConversionIncrease(totalSample);
+                showConversionIncreaseSection();
+            } else {
+                hideConversionIncreaseSection();
+            }
+        }
+
+        // 计算转化数增加区间
+        function calculateConversionIncrease(totalSample) {
+            if (!currentGrouping) return;
+            
+            const { groupA, groupB } = currentGrouping;
+            
+            // 计算转化率
+            const rateA = groupA.convert / groupA.sample;
+            const rateB = groupB.convert / groupB.sample;
+            
+            // 计算绝对提升和置信区间
+            const absoluteImprovement = rateB - rateA;
+            const se = Math.sqrt((rateA * (1 - rateA) / groupA.sample) + (rateB * (1 - rateB) / groupB.sample));
+            const margin = 1.96 * se; // 95%置信区间
+            
+            const lowerImprovement = absoluteImprovement - margin;
+            const upperImprovement = absoluteImprovement + margin;
+            
+            // 计算转化数增加区间
+            const lowerIncrease = lowerImprovement * totalSample;
+            const upperIncrease = upperImprovement * totalSample;
+            
+            // 更新显示
+            document.getElementById('totalSampleDisplay').textContent = totalSample.toLocaleString();
+            document.getElementById('conversionIncreaseRange').textContent = 
+                `[${lowerIncrease.toFixed(0)}, ${upperIncrease.toFixed(0)}]`;
+            document.getElementById('conversionIncreaseCount').textContent = 
+                `${absoluteImprovement * totalSample > 0 ? '+' : ''}${(absoluteImprovement * totalSample).toFixed(0)}`;
+        }
+
+        // 显示转化数增加区间
+        function showConversionIncreaseSection() {
+            conversionIncreaseSection.style.display = 'flex';
+        }
+
+        // 隐藏转化数增加区间
+        function hideConversionIncreaseSection() {
+            conversionIncreaseSection.style.display = 'none';
+        }
+
+        // 聚焦输入框
+        function focusInput() {
+            dataInput.focus();
+        }
+
+        // 输入验证函数
+        function validateInput(numbers) {
+            // 检查数量
+            if (numbers.length !== 4) {
+                return { valid: false, error: '请输入4个数字' };
+            }
+            
+            // 检查数值有效性
+            if (numbers.some(n => isNaN(n))) {
+                return { valid: false, error: '输入包含无效数字' };
+            }
+            
+            // 检查负值
+            if (numbers.some(n => n < 0)) {
+                return { valid: false, error: '数字不能为负数' };
+            }
+            
+            // 检查极值
+            if (numbers.some(n => n > 1e9)) {
+                return { valid: false, error: '数字过大，请使用小于10亿的数值' };
+            }
+            
+            // 检查零值情况
+            if (numbers.every(n => n === 0)) {
+                return { valid: false, error: '所有数字不能都为0' };
+            }
+            
+            return { valid: true, error: null };
+        }
+
+        // 处理数据输入 - 优化版本
+        function handleDataInput() {
+            const input = dataInput.value.trim();
+            if (input.length === 0) {
+                hideResults();
+                return;
+            }
+
+            // 解析数据
+            const numbers = parseInputData(input);
+            
+            // 输入验证
+            const validation = validateInput(numbers);
+            if (!validation.valid) {
+                // 显示错误提示
+                showError(validation.error);
+                hideResults();
+                return;
+            }
+            
+            // 清除错误提示
+            hideError();
+
+            currentData = numbers;
+            
+            // 自动计算并填充智能比例
+            const smartRatio = calculateSmartRatio(numbers);
+            if (smartRatio !== null) {
+                experimentRatioInput.value = smartRatio;
+            }
+            
+            performSmartGrouping();
+            showResults();
+        }
+
+        // 解析输入数据
+        function parseInputData(input) {
+            // 支持多种分隔符：空格、换行、制表符、逗号
+            const separators = /[\s\n\t,]+/;
+            const numbers = input.split(separators)
+                .map(str => str.trim())
+                .filter(str => str.length > 0)
+                .map(str => parseFloat(str))
+                .filter(num => !isNaN(num) && num >= 0);
+
+            return numbers;
+        }
+
+        // 智能比例计算
+        function calculateSmartRatio(numbers) {
+            if (numbers.length !== 4) return null;
+            
+            // 1. 数值从大到小排序
+            const sortedNumbers = [...numbers].sort((a, b) => b - a);
+            const [a, b, c, d] = sortedNumbers; // a > b > c > d
+            
+            // 2. 挑选两个最大的数值 a 和 b
+            // 3. 计算合理比例
+            const ratio1 = b / (a + b); // b/(a+b)
+            const ratio2 = a / (a + b); // a/(a+b)
+            
+            // 4. 取最接近的整数百分比
+            const ratio1Percent = Math.round(ratio1 * 100);
+            const ratio2Percent = Math.round(ratio2 * 100);
+            
+            // 5. 判断比例是否悬殊（差异>5%）
+            const ratioDiff = Math.abs(ratio1Percent - ratio2Percent);
+            
+            if (ratioDiff > 5) {
+                // 情况1：比例悬殊，取比例1
+                return ratio1Percent;
+            } else {
+                // 情况2：比例差不多，默认50%
+                return 50;
+            }
+        }
+
+        // 智能分组 - 优化版本（带缓存）
+        function performSmartGrouping() {
+            if (currentData.length !== 4) return;
+
+            const experimentRatio = parseFloat(experimentRatioInput.value) / 100;
+            const cacheKey = `${currentData.join(',')}_${experimentRatio}`;
+            
+            // 检查缓存
+            if (calculationCache.has(cacheKey)) {
+                currentGrouping = calculationCache.get(cacheKey);
+                calculateAndDisplayResults();
+                return;
+            }
+
+            const [a, b, c, d] = currentData.sort((x, y) => y - x); // 排序优化
+            
+            // 使用启发式规则，只生成4种合理的候选组合，而不是24种
+            const candidateGroupings = [
+                { groupA: { sample: a, convert: c }, groupB: { sample: b, convert: d }, type: 1 },
+                { groupA: { sample: a, convert: d }, groupB: { sample: b, convert: c }, type: 2 },
+                { groupA: { sample: b, convert: c }, groupB: { sample: a, convert: d }, type: 3 },
+                { groupA: { sample: b, convert: d }, groupB: { sample: a, convert: c }, type: 4 }
+            ];
+
+            // 剔除不合理分组
+            const validGroupings = candidateGroupings.filter(grouping => isValidGrouping(grouping));
+            
+            // 进一步剔除比例悬殊的分组
+            const reasonableGroupings = validGroupings.filter(grouping => isRatioReasonable(grouping));
+            
+            if (reasonableGroupings.length === 0) {
+                currentGrouping = null;
+                return;
+            }
+
+            // 选择最佳分组
+            currentGrouping = selectBestGrouping(reasonableGroupings);
+            
+            // 缓存结果
+            if (currentGrouping) {
+                calculationCache.set(cacheKey, currentGrouping);
+                
+                // 限制缓存大小
+                if (calculationCache.size > CACHE_SIZE_LIMIT) {
+                    const firstKey = calculationCache.keys().next().value;
+                    calculationCache.delete(firstKey);
+                }
+            }
+            
+            calculateAndDisplayResults();
+        }
+
+        // 生成所有可能的分组方式
+        function generateAllPossibleGroupings(data) {
+            const [a, b, c, d] = data;
+            const groupings = [];
+            let typeCounter = 1;
+            
+            // 生成所有可能的样本数和转化数组合
+            const allNumbers = [a, b, c, d];
+            
+            // 遍历所有可能的组合
+            for (let i = 0; i < allNumbers.length; i++) {
+                for (let j = 0; j < allNumbers.length; j++) {
+                    if (i === j) continue; // 避免重复使用同一个数
+                    
+                    for (let k = 0; k < allNumbers.length; k++) {
+                        if (k === i || k === j) continue;
+                        
+                        for (let l = 0; l < allNumbers.length; l++) {
+                            if (l === i || l === j || l === k) continue;
+                            
+                            // 生成分组：A组(样本i, 转化j) B组(样本k, 转化l)
+                            const grouping = {
+                                groupA: { sample: allNumbers[i], convert: allNumbers[j] },
+                                groupB: { sample: allNumbers[k], convert: allNumbers[l] },
+                                type: typeCounter++
+                            };
+                            
+                            groupings.push(grouping);
+                        }
+                    }
+                }
+            }
+            
+            return groupings;
+        }
+
+        // 检查分组是否合理
+        function isValidGrouping(grouping) {
+            const { groupA, groupB } = grouping;
+            
+            // 基础合理性：转化数不能大于样本数
+            if (groupA.convert > groupA.sample || groupB.convert > groupB.sample) {
+                return false;
+            }
+            
+            // 转化率合理性：转化率在0-1之间
+            const rateA = groupA.convert / groupA.sample;
+            const rateB = groupB.convert / groupB.sample;
+            if (rateA < 0 || rateA > 1 || rateB < 0 || rateB > 1) {
+                return false;
+            }
+            
+            return true;
+        }
+
+        // 检查分组比例是否合理（不过于悬殊）
+        function isRatioReasonable(grouping) {
+            const { groupA, groupB } = grouping;
+            const experimentRatio = parseFloat(experimentRatioInput.value) / 100;
+            const totalSample = groupA.sample + groupB.sample;
+            
+            // B组（实验组）的比例
+            const experimentGroupRatio = groupB.sample / totalSample;
+            
+            // 计算与目标比例的差异
+            const ratioDiff = Math.abs(experimentGroupRatio - experimentRatio);
+            
+            // 只保留比例非常接近的分组（差异≤3%）
+            return ratioDiff <= 0.03;
+        }
+
+        // 选择最佳分组
+        function selectBestGrouping(groupings) {
+            return groupings.reduce((best, current) => {
+                const bestScore = calculateGroupingScore(best);
+                const currentScore = calculateGroupingScore(current);
+                return currentScore > bestScore ? current : best;
+            });
+        }
+
+        // 计算分组合理性得分
+        function calculateGroupingScore(grouping) {
+            const { groupA, groupB } = grouping;
+            
+            let score = 0;
+
+            // 1. 样本比例匹配性（最高优先级）- A组为对照组，B组为实验组
+            const experimentRatio = parseFloat(experimentRatioInput.value) / 100;
+            const totalSample = groupA.sample + groupB.sample;
+            
+            // B组（实验组）的比例
+            const experimentGroupRatio = groupB.sample / totalSample;
+            
+            // 计算与目标比例的差异
+            const ratioDiff = Math.abs(experimentGroupRatio - experimentRatio);
+            
+            // 如果比例完全匹配（差异小于0.1%），给予最高分
+            if (ratioDiff < 0.001) {
+                score += 2000; // 比例完全匹配时给予最高分
+            } else {
+                const ratioSimilarity = Math.max(0, 1 - ratioDiff * 5);
+                score += ratioSimilarity * 1000;
+            }
+
+            // 2. 转化率合理性（次要优先级）
+            const rateA = groupA.convert / groupA.sample;
+            const rateB = groupB.convert / groupB.sample;
+            
+            // 转化率应该在合理范围内（0-1）
+            if (rateA >= 0 && rateA <= 1 && rateB >= 0 && rateB <= 1) {
+                score += 200;
+            }
+            
+            // 转化率差异处理 - 在比例匹配的情况下，优先选择转化率相近的分组（期望分组）
+            const rateDiff = Math.abs(rateA - rateB);
+            if (ratioDiff < 0.001) {
+                // 比例完全匹配时，优先选择转化率相近的分组（期望分组）
+                if (rateDiff < 0.05) {
+                    score += 300; // 转化率相近时给予最高分
+                } else if (rateDiff < 0.1) {
+                    score += 200;
+                } else if (rateDiff < 0.2) {
+                    score += 100;
+                } else {
+                    score += 50; // 转化率差异较大时给予较低分
+                }
+            } else {
+                // 比例不匹配时，转化率差异的惩罚较大
+                if (rateDiff < 0.05) {
+                    score += 200;
+                } else if (rateDiff < 0.1) {
+                    score += 100;
+                } else if (rateDiff < 0.2) {
+                    score += 50;
+                } else if (rateDiff > 0.3) {
+                    score -= 500;
+                }
+            }
+
+            // 3. 样本数差异控制
+            const sampleRatio = Math.max(groupA.sample, groupB.sample) / Math.min(groupA.sample, groupB.sample);
+            if (sampleRatio < 10) {
+                score += 100;
+            } else if (sampleRatio < 50) {
+                score += 50;
+            }
+
+            // 4. 样本量合理性
+            if (groupA.sample >= 100 && groupB.sample >= 100) {
+                score += 50;
+            }
+
+            return score;
+        }
+
+        // 切换分组
+        function toggleGrouping() {
+            if (currentData.length !== 4 || !currentGrouping) return;
+
+            // 生成所有可能的分组方式（使用修复后的逻辑）
+            const allGroupings = generateAllPossibleGroupings(currentData);
+
+            // 剔除不合理分组
+            const validGroupings = allGroupings.filter(grouping => isValidGrouping(grouping));
+            
+            // 进一步剔除比例悬殊的分组
+            const reasonableGroupings = validGroupings.filter(grouping => isRatioReasonable(grouping));
+            
+            if (reasonableGroupings.length <= 1) return;
+
+            // 找到当前分组在合理分组中的索引
+            const currentIndex = reasonableGroupings.findIndex(g => g.type === currentGrouping.type);
+            
+            // 切换到下一个合理分组
+            const nextIndex = (currentIndex + 1) % reasonableGroupings.length;
+            currentGrouping = reasonableGroupings[nextIndex];
+            
+            calculateAndDisplayResults();
+        }
+
+        // 计算并显示结果
+        function calculateAndDisplayResults() {
+            if (!currentGrouping) return;
+
+            const { groupA, groupB } = currentGrouping;
+            
+            // 计算转化率
+            const rateA = groupA.convert / groupA.sample;
+            const rateB = groupB.convert / groupB.sample;
+            
+            // 计算绝对提升（百分点）
+            const absoluteImprovement = (rateB - rateA) * 100;
+            
+            // 计算相对提升（百分比）
+            const relativeImprovement = rateA > 0 ? ((rateB - rateA) / rateA) * 100 : 0;
+            
+            // 计算P值（双样本比例检验）
+            const pValue = calculatePValue(groupA.sample, groupA.convert, groupB.sample, groupB.convert);
+            
+            // 计算置信区间
+            const confidenceInterval = calculateConfidenceInterval(rateA, rateB, groupA.sample, groupB.sample);
+
+            // 更新显示
+            updateDisplayResults(groupA, groupB, absoluteImprovement, relativeImprovement, pValue, confidenceInterval);
+            
+            // 自动计算并填充实际样本总量
+            const experimentRatio = parseFloat(experimentRatioInput.value) / 100;
+            const calculatedTotalSample = Math.round(groupA.sample / (1 - experimentRatio));
+            totalSampleInput.value = calculatedTotalSample;
+            
+            // 计算转化数增加区间
+            calculateConversionIncrease(calculatedTotalSample);
+            showConversionIncreaseSection();
+        }
+
+        // 计算P值（Fisher精确检验的近似）
+        function calculatePValue(n1, x1, n2, x2) {
+            const p1 = x1 / n1;
+            const p2 = x2 / n2;
+            const p = (x1 + x2) / (n1 + n2);
+            
+            const se = Math.sqrt(p * (1 - p) * (1/n1 + 1/n2));
+            const z = (p2 - p1) / se;
+            
+            // 双尾检验
+            const pValue = 2 * (1 - jStat.normal.cdf(Math.abs(z), 0, 1));
+            
+            return Math.max(pValue, 0.0001); // 避免显示0
+        }
+
+        // 计算置信区间
+        function calculateConfidenceInterval(p1, p2, n1, n2) {
+            const se = Math.sqrt((p1 * (1 - p1) / n1) + (p2 * (1 - p2) / n2));
+            const margin = 1.96 * se; // 95%置信区间
+            const diff = p2 - p1;
+            
+            const lower = (diff - margin) * 100;
+            const upper = (diff + margin) * 100;
+            
+            return `[${lower.toFixed(2)}%, ${upper.toFixed(2)}%]`;
+        }
+
+
+        // 更新显示结果 - 优化版本（批量更新）
+        function updateDisplayResults(groupA, groupB, absoluteImprovement, relativeImprovement, pValue, confidenceInterval) {
+            // 批量准备更新数据
+            const updates = {
+                'groupASample': groupA.sample.toLocaleString(),
+                'groupAConvert': groupA.convert.toLocaleString(),
+                'groupARate': ((groupA.convert / groupA.sample) * 100).toFixed(2) + '%',
+                'groupBSample': groupB.sample.toLocaleString(),
+                'groupBConvert': groupB.convert.toLocaleString(),
+                'groupBRate': ((groupB.convert / groupB.sample) * 100).toFixed(2) + '%',
+                'absoluteImprovement': absoluteImprovement >= 0 ? 
+                    `+${absoluteImprovement.toFixed(2)}pp` : 
+                    `${absoluteImprovement.toFixed(2)}pp`,
+                'relativeImprovement': relativeImprovement >= 0 ? 
+                    `+${relativeImprovement.toFixed(2)}%` : 
+                    `${relativeImprovement.toFixed(2)}%`,
+                'pValue': pValue.toFixed(4),
+                'confidenceInterval': confidenceInterval
+            };
+            
+            // 批量更新DOM
+            Object.entries(updates).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                }
+            });
+        }
+
+
+        // 显示结果
+        function showResults() {
+            resultsSection.classList.remove('hidden');
+            recognitionResults.classList.remove('hidden');
+            smartGroupBtn.disabled = false;
+            copyResultsBtn.style.display = 'flex';
+        }
+
+        // 隐藏结果
+        function hideResults() {
+            resultsSection.classList.add('hidden');
+            recognitionResults.classList.add('hidden');
+            smartGroupBtn.disabled = true;
+            copyResultsBtn.style.display = 'none';
+        }
+
+        // 清空数据
+        function clearData() {
+            dataInput.value = '';
+            experimentRatioInput.value = '50';
+            totalSampleInput.value = '';
+            currentData = [];
+            currentGrouping = null;
+            hideResults();
+            hideConversionIncreaseSection();
+            focusInput();
+        }
+
+        // 复制结果到剪贴板
+        function copyResults() {
+            if (!currentGrouping) return;
+            
+            const { groupA, groupB } = currentGrouping;
+            
+            // 计算转化率
+            const rateA = groupA.convert / groupA.sample;
+            const rateB = groupB.convert / groupB.sample;
+            
+            // 计算绝对提升和相对提升
+            const absoluteImprovement = (rateB - rateA) * 100;
+            const relativeImprovement = rateA > 0 ? ((rateB - rateA) / rateA) * 100 : 0;
+            
+            // 计算P值
+            const pValue = calculatePValue(groupA.sample, groupA.convert, groupB.sample, groupB.convert);
+            
+            // 获取实际样本总量
+            const totalSample = parseFloat(totalSampleInput.value) || 0;
+            
+            // 计算转化数增加
+            const conversionIncrease = absoluteImprovement * totalSample / 100;
+            
+            // 构建复制内容
+            const copyText = `组别\t进组样本数\t转化样本数\t转化率
+实验组\t${groupB.sample}\t${groupB.convert}\t${(rateB * 100).toFixed(2)}%
+对照组\t${groupA.sample}\t${groupA.convert}\t${(rateA * 100).toFixed(2)}%
+
+实验组vs对照组
+转化率绝对提升：${absoluteImprovement >= 0 ? '+' : ''}${absoluteImprovement.toFixed(2)}pp
+转化率相对提升：${relativeImprovement >= 0 ? '+' : ''}${relativeImprovement.toFixed(2)}%
+P值：${pValue.toFixed(4)}
+实际样本总量 ${totalSample.toLocaleString()}，全量后转化增加${conversionIncrease >= 0 ? '+' : ''}${conversionIncrease.toFixed(0)}`;
+
+            // 复制到剪贴板
+            navigator.clipboard.writeText(copyText).then(() => {
+                showToast();
+            }).catch(err => {
+                console.error('复制失败:', err);
+                // 降级方案：使用传统方法
+                const textArea = document.createElement('textarea');
+                textArea.value = copyText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast();
+            });
+        }
+
+        // 显示Toast提示
+        function showToast() {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // 显示错误提示
+        function showError(message) {
+            errorToast.textContent = message;
+            errorToast.classList.add('show');
+            setTimeout(() => {
+                errorToast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 隐藏错误提示
+        function hideError() {
+            errorToast.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
+
+

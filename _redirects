@@ -1,0 +1,8 @@
+# 微信浏览器重定向优化
+/abtestcalculator_2025-0919-1631.html /index.html 200
+
+# HTTPS强制重定向
+http://abtools.netlify.app/* https://abtools.netlify.app/:splat 301!
+
+# 微信分享优化
+/wechat-share.html /index.html 200

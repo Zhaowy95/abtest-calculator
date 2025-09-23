@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# 微信浏览器优化
+User-agent: MicroMessenger
+Allow: /
+
+# 搜索引擎优化
+Sitemap: https://abtools.netlify.app/sitemap.xml
