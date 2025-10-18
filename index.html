@@ -1210,9 +1210,19 @@ P值：${pValue.toFixed(4)}
                     const newTotalSample = Math.round(controlSample / (1 - newRatio / 100));
                     totalSampleInput.value = newTotalSample;
                     
+                    // 显示重新计算后的结果：对照组数值/比例%
+                    display.innerHTML = '';
+                    display.className = 'text-sm font-bold text-gray-800 text-center cursor-pointer';
+                    display.textContent = `${controlSample}/${newRatio}%`;
+                    
                     // 重新触发分组和计算
                     isManualRatioInput = true;
                     performSmartGrouping();
+                    
+                    // 触发转化数重新计算
+                    if (currentGrouping) {
+                        calculateConversionIncrease(newTotalSample);
+                    }
                 } else {
                     // 恢复原值
                     ratioSpan.textContent = experimentRatio;
