@@ -440,10 +440,13 @@
             const lowerImprovement = absoluteImprovement - margin;
             const upperImprovement = absoluteImprovement + margin;
             
-            // 计算转化数增加区间（按天计算）
-            const dailyLowerIncrease = lowerImprovement * totalSample;
-            const dailyUpperIncrease = upperImprovement * totalSample;
-            const dailyAbsoluteIncrease = absoluteImprovement * totalSample;
+            // 计算每天的样本规模：实际样本总量/天数
+            const dailySampleSize = totalSample / experimentDays;
+            
+            // 计算每天的转化数增加区间
+            const dailyLowerIncrease = lowerImprovement * dailySampleSize;
+            const dailyUpperIncrease = upperImprovement * dailySampleSize;
+            const dailyAbsoluteIncrease = absoluteImprovement * dailySampleSize;
             
             // 根据实验天数计算总增加量
             const totalLowerIncrease = dailyLowerIncrease * experimentDays;
@@ -1051,7 +1054,8 @@
             const totalSample = parseFloat(totalSampleInput.value) || 0;
             
             // 计算转化数增加（按天计算）
-            const dailyConversionIncrease = absoluteImprovement * totalSample / 100;
+            const dailySampleSize = totalSample / experimentDays;
+            const dailyConversionIncrease = absoluteImprovement * dailySampleSize / 100;
             const totalConversionIncrease = dailyConversionIncrease * experimentDays;
             
             // 构建复制内容
@@ -1108,11 +1112,11 @@ P值：${pValue.toFixed(4)}
             const display = document.getElementById('experimentDaysDisplay');
             const currentValue = display.textContent;
             
-            // 创建输入框
+            // 创建输入框（缩小字号）
             const input = document.createElement('input');
             input.type = 'number';
             input.value = '';
-            input.className = 'text-xl font-bold text-gray-800 text-center w-full border-none outline-none bg-transparent';
+            input.className = 'text-sm font-bold text-gray-800 text-center w-full border-none outline-none bg-transparent';
             input.min = '1';
             input.placeholder = '输入天数';
             
@@ -1140,7 +1144,14 @@ P值：${pValue.toFixed(4)}
                 }
             };
             
-            // 绑定事件
+            // 绑定事件 - 点击空白区域或按Enter键完成输入
+            document.addEventListener('click', function clickOutside(e) {
+                if (!input.contains(e.target)) {
+                    handleComplete();
+                    document.removeEventListener('click', clickOutside);
+                }
+            });
+            
             input.addEventListener('blur', handleComplete);
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -1162,17 +1173,10 @@ P值：${pValue.toFixed(4)}
             const controlSample = currentGrouping.groupA.sample;
             const experimentRatio = parseFloat(experimentRatioInput.value);
             
-            // 创建输入框，显示公式格式
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = experimentRatio;
-            input.className = 'text-xl font-bold text-gray-800 text-center w-full border-none outline-none bg-transparent';
-            input.style.textAlign = 'center';
-            
-            // 创建公式显示
+            // 创建公式显示（缩小字号，一行展示）
             const formula = document.createElement('div');
-            formula.className = 'text-xl font-bold text-gray-800 text-center';
-            formula.innerHTML = `${controlSample}/<span id="ratioInput">${experimentRatio}</span>%`;
+            formula.className = 'text-sm font-bold text-gray-800 text-center cursor-pointer';
+            formula.innerHTML = `${controlSample}/<span id="ratioInput" contenteditable="true">${experimentRatio}</span>%`;
             
             // 替换显示内容
             display.innerHTML = '';
@@ -1180,11 +1184,12 @@ P值：${pValue.toFixed(4)}
             
             // 让比例部分可编辑
             const ratioSpan = document.getElementById('ratioInput');
-            ratioSpan.contentEditable = true;
             ratioSpan.style.outline = 'none';
             ratioSpan.style.border = '1px solid #3b82f6';
             ratioSpan.style.borderRadius = '4px';
             ratioSpan.style.padding = '2px 4px';
+            ratioSpan.style.display = 'inline-block';
+            ratioSpan.style.minWidth = '30px';
             ratioSpan.focus();
             
             // 选中文本
@@ -1214,7 +1219,14 @@ P值：${pValue.toFixed(4)}
                 }
             };
             
-            // 绑定事件
+            // 绑定事件 - 点击空白区域或按Enter键完成输入
+            document.addEventListener('click', function clickOutside(e) {
+                if (!formula.contains(e.target)) {
+                    handleComplete();
+                    document.removeEventListener('click', clickOutside);
+                }
+            });
+            
             ratioSpan.addEventListener('blur', handleComplete);
             ratioSpan.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
