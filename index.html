@@ -1108,7 +1108,7 @@ P值：${pValue.toFixed(4)}
         }
 
         // 编辑实验天数
-        function editExperimentDays() {
+        window.editExperimentDays = function() {
             const display = document.getElementById('experimentDaysDisplay');
             const currentValue = display.textContent;
             
@@ -1161,7 +1161,7 @@ P值：${pValue.toFixed(4)}
         }
 
         // 编辑实际样本总量
-        function editTotalSample() {
+        window.editTotalSample = function() {
             const display = document.getElementById('totalSampleDisplay');
             const currentValue = display.textContent;
             
