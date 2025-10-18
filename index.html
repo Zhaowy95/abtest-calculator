@@ -1117,11 +1117,11 @@ P值：${pValue.toFixed(4)}
             }
             const currentValue = display.textContent;
             
-            // 创建输入框（缩小字号）
+            // 创建输入框
             const input = document.createElement('input');
             input.type = 'number';
-            input.value = '';
-            input.className = 'text-sm font-bold text-gray-800 text-center w-full border-none outline-none bg-transparent';
+            input.value = ''; // 置空，让用户直接输入
+            input.className = 'text-xl font-bold text-gray-800 text-center w-full border-none outline-none bg-transparent';
             input.min = '1';
             input.placeholder = '输入天数';
             
@@ -1132,15 +1132,25 @@ P值：${pValue.toFixed(4)}
             
             // 处理输入完成
             const handleComplete = () => {
-                const value = parseInt(input.value);
-                if (value && value > 0) {
-                    experimentDays = value;
-                    display.textContent = value;
-                } else {
-                    display.textContent = '1'; // 恢复默认值
+                const inputValue = input.value.trim();
+                
+                if (inputValue === '') {
+                    // 用户置空，恢复默认值
+                    display.textContent = '1';
                     experimentDays = 1;
+                } else {
+                    const value = parseInt(inputValue);
+                    if (value && value > 0) {
+                        experimentDays = value;
+                        display.textContent = value;
+                    } else {
+                        // 输入无效，恢复默认值
+                        display.textContent = '1';
+                        experimentDays = 1;
+                    }
                 }
-                // 重新计算转化数增加区间
+                
+                // 触发重新计算转化数
                 if (currentGrouping) {
                     const totalSample = parseFloat(totalSampleInput.value) || 0;
                     if (totalSample > 0) {
@@ -1185,7 +1195,7 @@ P值：${pValue.toFixed(4)}
             
             // 创建公式显示：=对照组数值/比例%
             const formula = document.createElement('div');
-            formula.className = 'text-sm font-bold text-gray-800 text-center cursor-pointer';
+            formula.className = 'text-xl font-bold text-gray-800 text-center cursor-pointer';
             formula.innerHTML = `=${controlSample}/<span id="ratioInput" contenteditable="true"></span>%`;
             
             // 替换显示内容
