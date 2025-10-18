@@ -274,11 +274,11 @@
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
                                     <div class="text-center">
                                         <div class="text-sm text-gray-700 mb-1">实验天数</div>
-                                        <div class="text-xl font-bold text-gray-800 cursor-pointer" id="experimentDaysDisplay" onclick="editExperimentDays()">1</div>
+                                        <div class="text-xl font-bold text-gray-800 cursor-pointer" id="experimentDaysDisplay">1</div>
                                     </div>
                                     <div class="text-center">
                                         <div class="text-sm text-gray-700 mb-1">实际样本总量</div>
-                                        <div class="text-xl font-bold text-gray-800 cursor-pointer" id="totalSampleDisplay" onclick="editTotalSample()">-</div>
+                                        <div class="text-xl font-bold text-gray-800 cursor-pointer" id="totalSampleDisplay">-</div>
                                     </div>
                                     <div class="text-center">
                                         <div class="text-sm text-gray-700 mb-1">转化数增加区间</div>
@@ -1108,8 +1108,13 @@ P值：${pValue.toFixed(4)}
         }
 
         // 编辑实验天数
-        window.editExperimentDays = function() {
+        function editExperimentDays() {
+            console.log('editExperimentDays 函数被调用');
             const display = document.getElementById('experimentDaysDisplay');
+            if (!display) {
+                console.error('找不到 experimentDaysDisplay 元素');
+                return;
+            }
             const currentValue = display.textContent;
             
             // 创建输入框（缩小字号）
@@ -1161,8 +1166,13 @@ P值：${pValue.toFixed(4)}
         }
 
         // 编辑实际样本总量
-        window.editTotalSample = function() {
+        function editTotalSample() {
+            console.log('editTotalSample 函数被调用');
             const display = document.getElementById('totalSampleDisplay');
+            if (!display) {
+                console.error('找不到 totalSampleDisplay 元素');
+                return;
+            }
             const currentValue = display.textContent;
             
             if (currentValue === '-') return; // 如果没有数据，不进行编辑
@@ -1248,6 +1258,27 @@ P值：${pValue.toFixed(4)}
                 }
             });
         }
+
+        // 页面加载完成后绑定事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            // 绑定实验天数点击事件
+            const experimentDaysDisplay = document.getElementById('experimentDaysDisplay');
+            if (experimentDaysDisplay) {
+                experimentDaysDisplay.addEventListener('click', function() {
+                    console.log('实验天数点击事件触发');
+                    editExperimentDays();
+                });
+            }
+
+            // 绑定实际样本总量点击事件
+            const totalSampleDisplay = document.getElementById('totalSampleDisplay');
+            if (totalSampleDisplay) {
+                totalSampleDisplay.addEventListener('click', function() {
+                    console.log('实际样本总量点击事件触发');
+                    editTotalSample();
+                });
+            }
+        });
     </script>
 </body>
 </html>
