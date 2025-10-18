@@ -34,6 +34,47 @@
 
 🌐 **立即使用：** https://zhaowy95.github.io/abtest-calculator
 
+## 部署到GitHub Pages
+
+### 🚀 快速重新部署
+
+#### 方法一：使用部署脚本（推荐）
+```bash
+# 给脚本执行权限
+chmod +x redeploy.sh
+
+# 运行重新部署脚本
+./redeploy.sh
+```
+
+#### 方法二：手动部署
+```bash
+# 添加所有文件
+git add .
+
+# 提交更改
+git commit -m "feat: 重新部署AB实验P值计算工具"
+
+# 推送到GitHub
+git push origin main
+```
+
+### 📋 部署验证步骤
+1. 进入GitHub仓库：https://github.com/Zhaowy95/abtest-calculator
+2. 点击 **Actions** 标签查看部署状态
+3. 进入 **Settings** → **Pages** 检查设置
+4. 等待2-5分钟后访问网站
+
+### 🌐 访问您的网站
+部署成功后，您可以通过以下URL访问：
+- **主网站**：https://zhaowy95.github.io/abtest-calculator
+- **备用页面**：https://zhaowy95.github.io/abtest-calculator/abtestcalculator_2025-0919-1631.html
+
+### 🔧 故障排除
+如果网站无法访问，请查看：
+- `TROUBLESHOOTING.md` - 详细故障排除指南
+- `MANUAL_DEPLOY.md` - 手动部署指南
+
 ## 技术栈
 
 - HTML5 + CSS3 + JavaScript
