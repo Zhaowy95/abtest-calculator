@@ -267,14 +267,18 @@
                                 <svg class="w-4 h-4 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                                 </svg>
-                                全量同步实验组策略增量效果
+                                全量同步实验组策略增量效果（单位：天）
                             </h3>
                             
                             <div class="border border-gray-200 rounded-lg p-4 flex-1">
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                                    <div class="text-center">
+                                        <div class="text-sm text-gray-700 mb-1">实验天数</div>
+                                        <div class="text-xl font-bold text-gray-800 cursor-pointer" id="experimentDaysDisplay" onclick="editExperimentDays()">1</div>
+                                    </div>
                                     <div class="text-center">
                                         <div class="text-sm text-gray-700 mb-1">实际样本总量</div>
-                                        <div class="text-xl font-bold text-gray-800" id="totalSampleDisplay">-</div>
+                                        <div class="text-xl font-bold text-gray-800 cursor-pointer" id="totalSampleDisplay" onclick="editTotalSample()">-</div>
                                     </div>
                                     <div class="text-center">
                                         <div class="text-sm text-gray-700 mb-1">转化数增加区间</div>
@@ -321,6 +325,7 @@
         let currentData = [];
         let currentGrouping = null;
         let isManualRatioInput = false; // 标记是否为用户手动输入比例
+        let experimentDays = 1; // 实验天数，默认值1
 
         // DOM元素
         const dataInput = document.getElementById('dataInput');
@@ -435,16 +440,22 @@
             const lowerImprovement = absoluteImprovement - margin;
             const upperImprovement = absoluteImprovement + margin;
             
-            // 计算转化数增加区间
-            const lowerIncrease = lowerImprovement * totalSample;
-            const upperIncrease = upperImprovement * totalSample;
+            // 计算转化数增加区间（按天计算）
+            const dailyLowerIncrease = lowerImprovement * totalSample;
+            const dailyUpperIncrease = upperImprovement * totalSample;
+            const dailyAbsoluteIncrease = absoluteImprovement * totalSample;
+            
+            // 根据实验天数计算总增加量
+            const totalLowerIncrease = dailyLowerIncrease * experimentDays;
+            const totalUpperIncrease = dailyUpperIncrease * experimentDays;
+            const totalAbsoluteIncrease = dailyAbsoluteIncrease * experimentDays;
             
             // 更新显示
             document.getElementById('totalSampleDisplay').textContent = totalSample.toLocaleString();
             document.getElementById('conversionIncreaseRange').textContent = 
-                `[${lowerIncrease.toFixed(0)}, ${upperIncrease.toFixed(0)}]`;
+                `[${totalLowerIncrease.toFixed(0)}, ${totalUpperIncrease.toFixed(0)}]`;
             document.getElementById('conversionIncreaseCount').textContent = 
-                `${absoluteImprovement * totalSample > 0 ? '+' : ''}${(absoluteImprovement * totalSample).toFixed(0)}`;
+                `${totalAbsoluteIncrease > 0 ? '+' : ''}${totalAbsoluteIncrease.toFixed(0)}`;
         }
 
         // 显示转化数增加区间
@@ -1039,8 +1050,9 @@
             // 获取实际样本总量
             const totalSample = parseFloat(totalSampleInput.value) || 0;
             
-            // 计算转化数增加
-            const conversionIncrease = absoluteImprovement * totalSample / 100;
+            // 计算转化数增加（按天计算）
+            const dailyConversionIncrease = absoluteImprovement * totalSample / 100;
+            const totalConversionIncrease = dailyConversionIncrease * experimentDays;
             
             // 构建复制内容
             const copyText = `组别\t进组样本数\t转化样本数\t转化率
@@ -1051,7 +1063,7 @@
 转化率绝对提升：${absoluteImprovement >= 0 ? '+' : ''}${absoluteImprovement.toFixed(2)}pp
 转化率相对提升：${relativeImprovement >= 0 ? '+' : ''}${relativeImprovement.toFixed(2)}%
 P值：${pValue.toFixed(4)}
-实际样本总量 ${totalSample.toLocaleString()}，全量后转化增加${conversionIncrease >= 0 ? '+' : ''}${conversionIncrease.toFixed(0)}`;
+实际样本总量 ${totalSample.toLocaleString()}，实验天数 ${experimentDays}天，全量后转化增加${totalConversionIncrease >= 0 ? '+' : ''}${totalConversionIncrease.toFixed(0)}`;
 
             // 复制到剪贴板
             navigator.clipboard.writeText(copyText).then(() => {
@@ -1089,6 +1101,126 @@ P值：${pValue.toFixed(4)}
         // 隐藏错误提示
         function hideError() {
             errorToast.classList.remove('show');
+        }
+
+        // 编辑实验天数
+        function editExperimentDays() {
+            const display = document.getElementById('experimentDaysDisplay');
+            const currentValue = display.textContent;
+            
+            // 创建输入框
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.value = '';
+            input.className = 'text-xl font-bold text-gray-800 text-center w-full border-none outline-none bg-transparent';
+            input.min = '1';
+            input.placeholder = '输入天数';
+            
+            // 替换显示内容
+            display.innerHTML = '';
+            display.appendChild(input);
+            input.focus();
+            
+            // 处理输入完成
+            const handleComplete = () => {
+                const value = parseInt(input.value);
+                if (value && value > 0) {
+                    experimentDays = value;
+                    display.textContent = value;
+                } else {
+                    display.textContent = '1'; // 恢复默认值
+                    experimentDays = 1;
+                }
+                // 重新计算转化数增加区间
+                if (currentGrouping) {
+                    const totalSample = parseFloat(totalSampleInput.value) || 0;
+                    if (totalSample > 0) {
+                        calculateConversionIncrease(totalSample);
+                    }
+                }
+            };
+            
+            // 绑定事件
+            input.addEventListener('blur', handleComplete);
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleComplete();
+                }
+            });
+        }
+
+        // 编辑实际样本总量
+        function editTotalSample() {
+            const display = document.getElementById('totalSampleDisplay');
+            const currentValue = display.textContent;
+            
+            if (currentValue === '-') return; // 如果没有数据，不进行编辑
+            
+            // 获取对照组样本数和实验组比例
+            if (!currentGrouping) return;
+            
+            const controlSample = currentGrouping.groupA.sample;
+            const experimentRatio = parseFloat(experimentRatioInput.value);
+            
+            // 创建输入框，显示公式格式
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = experimentRatio;
+            input.className = 'text-xl font-bold text-gray-800 text-center w-full border-none outline-none bg-transparent';
+            input.style.textAlign = 'center';
+            
+            // 创建公式显示
+            const formula = document.createElement('div');
+            formula.className = 'text-xl font-bold text-gray-800 text-center';
+            formula.innerHTML = `${controlSample}/<span id="ratioInput">${experimentRatio}</span>%`;
+            
+            // 替换显示内容
+            display.innerHTML = '';
+            display.appendChild(formula);
+            
+            // 让比例部分可编辑
+            const ratioSpan = document.getElementById('ratioInput');
+            ratioSpan.contentEditable = true;
+            ratioSpan.style.outline = 'none';
+            ratioSpan.style.border = '1px solid #3b82f6';
+            ratioSpan.style.borderRadius = '4px';
+            ratioSpan.style.padding = '2px 4px';
+            ratioSpan.focus();
+            
+            // 选中文本
+            const range = document.createRange();
+            range.selectNodeContents(ratioSpan);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            // 处理输入完成
+            const handleComplete = () => {
+                const newRatio = parseFloat(ratioSpan.textContent);
+                if (newRatio && newRatio > 0 && newRatio < 100) {
+                    // 更新实验组比例
+                    experimentRatioInput.value = newRatio;
+                    
+                    // 重新计算样本总量
+                    const newTotalSample = Math.round(controlSample / (1 - newRatio / 100));
+                    totalSampleInput.value = newTotalSample;
+                    
+                    // 重新触发分组和计算
+                    isManualRatioInput = true;
+                    performSmartGrouping();
+                } else {
+                    // 恢复原值
+                    ratioSpan.textContent = experimentRatio;
+                }
+            };
+            
+            // 绑定事件
+            ratioSpan.addEventListener('blur', handleComplete);
+            ratioSpan.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleComplete();
+                }
+            });
         }
     </script>
 </body>
