@@ -320,6 +320,7 @@
         // 全局变量
         let currentData = [];
         let currentGrouping = null;
+        let isManualRatioInput = false; // 标记是否为用户手动输入比例
 
         // DOM元素
         const dataInput = document.getElementById('dataInput');
@@ -377,7 +378,11 @@
         // 处理实验组比例输入
         function handleExperimentRatioInput() {
             if (currentData.length === 4) {
+                // 标记这是用户手动输入的比例
+                isManualRatioInput = true;
+                
                 performSmartGrouping();
+                
                 // 重新计算并更新样本总量
                 if (currentGrouping) {
                     const experimentRatio = parseFloat(experimentRatioInput.value) / 100;
@@ -512,6 +517,9 @@
 
             currentData = numbers;
             
+            // 重置手动输入标记
+            isManualRatioInput = false;
+            
             // 自动计算并填充智能比例
             const smartRatio = calculateSmartRatio(numbers);
             if (smartRatio !== null) {
@@ -564,12 +572,91 @@
             }
         }
 
+        // 生成比例匹配优先分组
+        function generateRatioMatchedGroupings(data, targetRatio) {
+            const [a, b, c, d] = data.sort((x, y) => y - x);
+            const groupings = [];
+            
+            // 计算目标样本分配
+            const totalSample = a + b + c + d;
+            const experimentSample = Math.round(totalSample * targetRatio);
+            const controlSample = totalSample - experimentSample;
+            
+            // 寻找最接近目标比例的数值组合作为分母
+            const allCombinations = [
+                [a, b], [a, c], [a, d], [b, c], [b, d], [c, d]
+            ];
+            
+            for (const [num1, num2] of allCombinations) {
+                const diff1 = Math.abs(num1 - experimentSample);
+                const diff2 = Math.abs(num2 - experimentSample);
+                
+                let experimentSample, controlSample;
+                if (diff1 < diff2) {
+                    experimentSample = num1;
+                    controlSample = num2;
+                } else {
+                    experimentSample = num2;
+                    controlSample = num1;
+                }
+                
+                // 获取剩余数值作为分子候选
+                const remainingNumbers = data.filter(n => n !== experimentSample && n !== controlSample);
+                
+                // 生成所有可能的分子分配组合
+                for (let i = 0; i < remainingNumbers.length; i++) {
+                    for (let j = 0; j < remainingNumbers.length; j++) {
+                        if (i === j) continue;
+                        
+                        const experimentConvert = remainingNumbers[i];
+                        const controlConvert = remainingNumbers[j];
+                        
+                        // 计算转化率
+                        const experimentRate = experimentConvert / experimentSample;
+                        const controlRate = controlConvert / controlSample;
+                        
+                        // 计算转化率差异
+                        const rateDiff = Math.abs(experimentRate - controlRate);
+                        
+                        groupings.push({
+                            groupA: { sample: controlSample, convert: controlConvert },
+                            groupB: { sample: experimentSample, convert: experimentConvert },
+                            type: 'ratio-matched',
+                            rateDiff: rateDiff,
+                            experimentRate: experimentRate,
+                            controlRate: controlRate
+                        });
+                    }
+                }
+            }
+            
+            return groupings;
+        }
+
+        // 选择最佳比例匹配分组
+        function selectBestRatioMatchedGrouping(groupings) {
+            if (groupings.length === 0) return null;
+            
+            return groupings.reduce((best, current) => {
+                // 1. 转化率差异越小越好
+                if (current.rateDiff !== best.rateDiff) {
+                    return current.rateDiff < best.rateDiff ? current : best;
+                }
+                
+                // 2. 转化率差异相同时，选择分母数值更大的组合
+                const bestTotalSample = best.groupA.sample + best.groupB.sample;
+                const currentTotalSample = current.groupA.sample + current.groupB.sample;
+                
+                return currentTotalSample > bestTotalSample ? current : best;
+            });
+        }
+
         // 智能分组 - 优化版本（带缓存）
         function performSmartGrouping() {
             if (currentData.length !== 4) return;
 
             const experimentRatio = parseFloat(experimentRatioInput.value) / 100;
-            const cacheKey = `${currentData.join(',')}_${experimentRatio}`;
+            const cacheKey = `${currentData.join(',')}_${experimentRatio}_${isManualRatioInput}`;
             
             // 检查缓存
             if (calculationCache.has(cacheKey)) {
@@ -578,6 +665,21 @@
                 return;
             }
 
+            // 只有在用户手动更改比例时才使用新的比例匹配逻辑
+            if (isManualRatioInput) {
+                const ratioMatchedGroupings = generateRatioMatchedGroupings(currentData, experimentRatio);
+                if (ratioMatchedGroupings.length > 0) {
+                    const bestRatioMatched = selectBestRatioMatchedGrouping(ratioMatchedGroupings);
+                    if (bestRatioMatched && isValidGrouping(bestRatioMatched)) {
+                        currentGrouping = bestRatioMatched;
+                        calculationCache.set(cacheKey, currentGrouping);
+                        calculateAndDisplayResults();
+                        return;
+                    }
+                }
+            }
+
+            // 如果比例匹配失败或不是手动输入，使用原有的4种候选分组逻辑
             const [a, b, c, d] = currentData.sort((x, y) => y - x); // 排序优化
             
             // 使用启发式规则，只生成4种合理的候选组合，而不是24种
