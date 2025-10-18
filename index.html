@@ -1173,10 +1173,10 @@ P值：${pValue.toFixed(4)}
             const controlSample = currentGrouping.groupA.sample;
             const experimentRatio = parseFloat(experimentRatioInput.value);
             
-            // 创建公式显示（缩小字号，一行展示）
+            // 创建公式显示：=对照组数值/比例%
             const formula = document.createElement('div');
             formula.className = 'text-sm font-bold text-gray-800 text-center cursor-pointer';
-            formula.innerHTML = `${controlSample}/<span id="ratioInput" contenteditable="true">${experimentRatio}</span>%`;
+            formula.innerHTML = `=${controlSample}/<span id="ratioInput" contenteditable="true"></span>%`;
             
             // 替换显示内容
             display.innerHTML = '';
@@ -1192,40 +1192,44 @@ P值：${pValue.toFixed(4)}
             ratioSpan.style.minWidth = '30px';
             ratioSpan.focus();
             
-            // 选中文本
-            const range = document.createRange();
-            range.selectNodeContents(ratioSpan);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            
             // 处理输入完成
             const handleComplete = () => {
-                const newRatio = parseFloat(ratioSpan.textContent);
-                if (newRatio && newRatio > 0 && newRatio < 100) {
-                    // 更新实验组比例
-                    experimentRatioInput.value = newRatio;
-                    
-                    // 重新计算样本总量
-                    const newTotalSample = Math.round(controlSample / (1 - newRatio / 100));
-                    totalSampleInput.value = newTotalSample;
-                    
-                    // 显示重新计算后的结果：对照组数值/比例%
+                const inputValue = ratioSpan.textContent.trim();
+                
+                if (inputValue === '') {
+                    // 用户置空，恢复原数值
                     display.innerHTML = '';
-                    display.className = 'text-sm font-bold text-gray-800 text-center cursor-pointer';
-                    display.textContent = `${controlSample}/${newRatio}%`;
-                    
-                    // 重新触发分组和计算
-                    isManualRatioInput = true;
-                    performSmartGrouping();
-                    
-                    // 触发转化数重新计算
-                    if (currentGrouping) {
-                        calculateConversionIncrease(newTotalSample);
-                    }
+                    display.className = 'text-xl font-bold text-gray-800 cursor-pointer';
+                    display.textContent = currentValue;
                 } else {
-                    // 恢复原值
-                    ratioSpan.textContent = experimentRatio;
+                    const newRatio = parseFloat(inputValue);
+                    if (newRatio && newRatio > 0 && newRatio < 100) {
+                        // 更新实验组比例
+                        experimentRatioInput.value = newRatio;
+                        
+                        // 重新计算样本总量
+                        const newTotalSample = Math.round(controlSample / (1 - newRatio / 100));
+                        totalSampleInput.value = newTotalSample;
+                        
+                        // 显示计算结果
+                        display.innerHTML = '';
+                        display.className = 'text-xl font-bold text-gray-800 cursor-pointer';
+                        display.textContent = newTotalSample.toLocaleString();
+                        
+                        // 重新触发分组和计算
+                        isManualRatioInput = true;
+                        performSmartGrouping();
+                        
+                        // 触发转化数重新计算
+                        if (currentGrouping) {
+                            calculateConversionIncrease(newTotalSample);
+                        }
+                    } else {
+                        // 输入无效，恢复原数值
+                        display.innerHTML = '';
+                        display.className = 'text-xl font-bold text-gray-800 cursor-pointer';
+                        display.textContent = currentValue;
+                    }
                 }
             };
             
