@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点击事件测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold mb-4">点击事件测试</h2>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">实验天数</label>
+                <div class="text-xl font-bold text-gray-800 cursor-pointer border border-gray-300 rounded px-3 py-2" id="experimentDaysDisplay">1</div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">实际样本总量</label>
+                <div class="text-xl font-bold text-gray-800 cursor-pointer border border-gray-300 rounded px-3 py-2" id="totalSampleDisplay">-</div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <button onclick="testFunction()" class="bg-blue-500 text-white px-4 py-2 rounded">测试函数调用</button>
+        </div>
+        
+        <div id="log" class="mt-4 p-3 bg-gray-100 rounded text-sm"></div>
+    </div>
+
+    <script>
+        let experimentDays = 1;
+        let currentGrouping = { groupA: { sample: 1000 } };
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '<br>';
+        }
+        
+        function testFunction() {
+            log('测试函数调用成功');
+        }
+        
+        // 编辑实验天数
+        function editExperimentDays() {
+            log('editExperimentDays 函数被调用');
+            const display = document.getElementById('experimentDaysDisplay');
+            if (!display) {
+                log('错误：找不到 experimentDaysDisplay 元素');
+                return;
+            }
+            
+            const currentValue = display.textContent;
+            log('当前值: ' + currentValue);
+            
+            // 创建输入框
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.value = '';
+            input.className = 'w-full text-xl font-bold text-gray-800 text-center border-none outline-none bg-transparent';
+            input.min = '1';
+            input.placeholder = '输入天数';
+            
+            // 替换显示内容
+            display.innerHTML = '';
+            display.appendChild(input);
+            input.focus();
+            
+            // 处理输入完成
+            const handleComplete = () => {
+                const value = parseInt(input.value);
+                if (value && value > 0) {
+                    experimentDays = value;
+                    display.textContent = value;
+                    log('实验天数更新为: ' + value);
+                } else {
+                    display.textContent = '1';
+                    experimentDays = 1;
+                    log('恢复默认值: 1');
+                }
+            };
+            
+            // 绑定事件
+            document.addEventListener('click', function clickOutside(e) {
+                if (!input.contains(e.target)) {
+                    handleComplete();
+                    document.removeEventListener('click', clickOutside);
+                }
+            });
+            
+            input.addEventListener('blur', handleComplete);
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleComplete();
+                }
+            });
+        }
+        
+        // 编辑实际样本总量
+        function editTotalSample() {
+            log('editTotalSample 函数被调用');
+            const display = document.getElementById('totalSampleDisplay');
+            if (!display) {
+                log('错误：找不到 totalSampleDisplay 元素');
+                return;
+            }
+            
+            const currentValue = display.textContent;
+            log('当前值: ' + currentValue);
+            
+            if (currentValue === '-') {
+                log('没有数据，不进行编辑');
+                return;
+            }
+            
+            // 模拟对照组样本数
+            const controlSample = 1000;
+            
+            // 创建公式显示
+            const formula = document.createElement('div');
+            formula.className = 'text-sm font-bold text-gray-800 text-center cursor-pointer';
+            formula.innerHTML = `=${controlSample}/<span id="ratioInput" contenteditable="true"></span>%`;
+            
+            // 替换显示内容
+            display.innerHTML = '';
+            display.appendChild(formula);
+            
+            // 让比例部分可编辑
+            const ratioSpan = document.getElementById('ratioInput');
+            ratioSpan.style.outline = 'none';
+            ratioSpan.style.border = '1px solid #3b82f6';
+            ratioSpan.style.borderRadius = '4px';
+            ratioSpan.style.padding = '2px 4px';
+            ratioSpan.style.display = 'inline-block';
+            ratioSpan.style.minWidth = '30px';
+            ratioSpan.focus();
+            
+            // 处理输入完成
+            const handleComplete = () => {
+                const inputValue = ratioSpan.textContent.trim();
+                log('输入值: ' + inputValue);
+                
+                if (inputValue === '') {
+                    display.textContent = currentValue;
+                    log('用户置空，恢复原值');
+                } else {
+                    const newRatio = parseFloat(inputValue);
+                    if (newRatio && newRatio > 0 && newRatio < 100) {
+                        const newTotalSample = Math.round(controlSample / (1 - newRatio / 100));
+                        display.textContent = newTotalSample.toLocaleString();
+                        log('计算结果: ' + newTotalSample);
+                    } else {
+                        display.textContent = currentValue;
+                        log('输入无效，恢复原值');
+                    }
+                }
+            };
+            
+            // 绑定事件
+            document.addEventListener('click', function clickOutside(e) {
+                if (!formula.contains(e.target)) {
+                    handleComplete();
+                    document.removeEventListener('click', clickOutside);
+                }
+            });
+            
+            ratioSpan.addEventListener('blur', handleComplete);
+            ratioSpan.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleComplete();
+                }
+            });
+        }
+        
+        // 页面加载完成后绑定事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成，开始绑定事件');
+            
+            // 绑定实验天数点击事件
+            const experimentDaysDisplay = document.getElementById('experimentDaysDisplay');
+            if (experimentDaysDisplay) {
+                experimentDaysDisplay.addEventListener('click', function() {
+                    log('实验天数点击事件触发');
+                    editExperimentDays();
+                });
+                log('实验天数事件监听器绑定成功');
+            } else {
+                log('错误：找不到 experimentDaysDisplay 元素');
+            }
+
+            // 绑定实际样本总量点击事件
+            const totalSampleDisplay = document.getElementById('totalSampleDisplay');
+            if (totalSampleDisplay) {
+                totalSampleDisplay.addEventListener('click', function() {
+                    log('实际样本总量点击事件触发');
+                    editTotalSample();
+                });
+                log('实际样本总量事件监听器绑定成功');
+            } else {
+                log('错误：找不到 totalSampleDisplay 元素');
+            }
+        });
+    </script>
+</body>
+</html>

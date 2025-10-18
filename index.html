@@ -1259,8 +1259,10 @@ P值：${pValue.toFixed(4)}
             });
         }
 
-        // 页面加载完成后绑定事件监听器
-        document.addEventListener('DOMContentLoaded', function() {
+        // 立即绑定事件监听器（不等待DOMContentLoaded）
+        function bindClickEvents() {
+            console.log('开始绑定点击事件');
+            
             // 绑定实验天数点击事件
             const experimentDaysDisplay = document.getElementById('experimentDaysDisplay');
             if (experimentDaysDisplay) {
@@ -1268,6 +1270,9 @@ P值：${pValue.toFixed(4)}
                     console.log('实验天数点击事件触发');
                     editExperimentDays();
                 });
+                console.log('实验天数事件监听器绑定成功');
+            } else {
+                console.error('找不到 experimentDaysDisplay 元素');
             }
 
             // 绑定实际样本总量点击事件
@@ -1277,8 +1282,36 @@ P值：${pValue.toFixed(4)}
                     console.log('实际样本总量点击事件触发');
                     editTotalSample();
                 });
+                console.log('实际样本总量事件监听器绑定成功');
+            } else {
+                console.error('找不到 totalSampleDisplay 元素');
             }
+        }
+        
+        // 页面加载完成后绑定事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成，绑定事件');
+            bindClickEvents();
         });
+        
+        // 如果DOM已经加载完成，立即绑定
+        if (document.readyState === 'loading') {
+            // DOM还在加载中，等待DOMContentLoaded事件
+        } else {
+            // DOM已经加载完成，立即绑定
+            console.log('DOM已经加载完成，立即绑定事件');
+            bindClickEvents();
+        }
+        
+        // 测试函数是否可用
+        console.log('editExperimentDays 函数可用:', typeof editExperimentDays);
+        console.log('editTotalSample 函数可用:', typeof editTotalSample);
+        
+        // 延迟绑定（确保所有代码都加载完成）
+        setTimeout(function() {
+            console.log('延迟绑定事件');
+            bindClickEvents();
+        }, 100);
     </script>
 </body>
 </html>
