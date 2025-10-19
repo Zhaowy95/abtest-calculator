@@ -376,6 +376,7 @@
             experimentRatioInput.addEventListener('blur', handleExperimentRatioBlur);
             totalSampleInput.addEventListener('input', handleTotalSampleInput);
             totalSampleInput.addEventListener('focus', handleTotalSampleFocus);
+            totalSampleInput.addEventListener('blur', handleTotalSampleBlur);
             smartGroupBtn.addEventListener('click', toggleGrouping);
             clearBtn.addEventListener('click', clearData);
             copyResultsBtn.addEventListener('click', copyResults);
@@ -400,31 +401,46 @@
             }
         }
 
-        // 处理实验组比例输入框焦点（点击时清空）
+
+        // 简化的输入框处理逻辑
         function handleExperimentRatioFocus() {
-            // 用户点击输入框时，自动清空比例数值
+            // 点击时清空，让用户直接输入
             experimentRatioInput.value = '';
         }
 
-        // 处理实验组比例输入框失焦（输入完成时恢复默认值）
         function handleExperimentRatioBlur() {
             const value = experimentRatioInput.value.trim();
             if (value === '') {
-                // 用户置空，恢复默认值50
+                // 用户没有输入，恢复默认值
                 experimentRatioInput.value = '50';
             } else {
                 const numValue = parseFloat(value);
-                if (!numValue || numValue < 1 || numValue > 99) {
-                    // 输入无效，恢复默认值50
+                if (isNaN(numValue) || numValue < 1 || numValue > 99) {
+                    // 输入无效，恢复默认值并提示
                     experimentRatioInput.value = '50';
+                    showError('请输入1-99之间的数值');
                 }
             }
         }
 
-        // 处理实际样本总量输入框焦点（点击时清空）
         function handleTotalSampleFocus() {
-            // 用户点击输入框时，自动清空样本总量数值
+            // 点击时清空，让用户直接输入
             totalSampleInput.value = '';
+        }
+
+        function handleTotalSampleBlur() {
+            const value = totalSampleInput.value.trim();
+            if (value === '') {
+                // 样本总量可以为空，不做处理
+                return;
+            } else {
+                const numValue = parseFloat(value);
+                if (isNaN(numValue) || numValue < 0) {
+                    // 输入无效，清空并提示
+                    totalSampleInput.value = '';
+                    showError('请输入有效的样本总量');
+                }
+            }
         }
 
         // 处理总样本量输入
