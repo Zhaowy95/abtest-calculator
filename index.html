@@ -475,15 +475,15 @@
             // 计算每天的样本规模：实际样本总量/天数
             const dailySampleSize = totalSample / days;
             
-            // 计算每天的转化数增加区间
+            // 计算每天的转化数增加区间（基于每日样本量）
             const dailyLowerIncrease = lowerImprovement * dailySampleSize;
             const dailyUpperIncrease = upperImprovement * dailySampleSize;
             const dailyAbsoluteIncrease = absoluteImprovement * dailySampleSize;
             
-            // 根据实验天数计算总增加量
-            const totalLowerIncrease = dailyLowerIncrease * days;
-            const totalUpperIncrease = dailyUpperIncrease * days;
-            const totalAbsoluteIncrease = dailyAbsoluteIncrease * days;
+            // 总增加量就是每日增加量（不乘以天数，因为这是基于每日样本量的计算）
+            const totalLowerIncrease = dailyLowerIncrease;
+            const totalUpperIncrease = dailyUpperIncrease;
+            const totalAbsoluteIncrease = dailyAbsoluteIncrease;
             
             // 更新显示
             document.getElementById('totalSampleDisplay').textContent = totalSample.toLocaleString();
@@ -1088,7 +1088,7 @@
             // 计算转化数增加（按天计算）
             const dailySampleSize = totalSample / experimentDays;
             const dailyConversionIncrease = absoluteImprovement * dailySampleSize / 100;
-            const totalConversionIncrease = dailyConversionIncrease * experimentDays;
+            const totalConversionIncrease = dailyConversionIncrease;
             
             // 构建复制内容
             const copyText = `组别\t进组样本数\t转化样本数\t转化率
