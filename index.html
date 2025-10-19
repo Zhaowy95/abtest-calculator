@@ -1191,15 +1191,7 @@ P值：${pValue.toFixed(4)}
                 }
             };
             
-            // 绑定事件 - 点击空白区域或按Enter键完成输入
-            const clickOutside = (e) => {
-                if (!input.contains(e.target)) {
-                    handleComplete();
-                    document.removeEventListener('click', clickOutside);
-                }
-            };
-            
-            document.addEventListener('click', clickOutside);
+            // 简化事件绑定 - 只监听失焦和回车
             input.addEventListener('blur', handleComplete);
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -1285,15 +1277,7 @@ P值：${pValue.toFixed(4)}
                 }
             };
             
-            // 绑定事件 - 点击空白区域或按Enter键完成输入
-            const clickOutside = (e) => {
-                if (!formula.contains(e.target)) {
-                    handleComplete();
-                    document.removeEventListener('click', clickOutside);
-                }
-            };
-            
-            document.addEventListener('click', clickOutside);
+            // 简化事件绑定 - 只监听失焦和回车
             ratioInput.addEventListener('blur', handleComplete);
             ratioInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
