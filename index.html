@@ -395,7 +395,7 @@
                     const experimentRatio = parseFloat(experimentRatioInput.value) / 100;
                     const calculatedTotalSample = Math.round(currentGrouping.groupA.sample / (1 - experimentRatio));
                     totalSampleInput.value = calculatedTotalSample;
-                    calculateConversionIncrease(calculatedTotalSample);
+                    calculateConversionIncrease(calculatedTotalSample, experimentDays);
                     showConversionIncreaseSection();
                 }
             }
@@ -447,7 +447,7 @@
         function handleTotalSampleInput() {
             const totalSample = parseFloat(totalSampleInput.value);
             if (totalSample > 0 && currentGrouping) {
-                calculateConversionIncrease(totalSample);
+                calculateConversionIncrease(totalSample, experimentDays);
                 showConversionIncreaseSection();
             } else {
                 hideConversionIncreaseSection();
@@ -975,7 +975,7 @@
             totalSampleInput.value = calculatedTotalSample;
             
             // 计算转化数增加区间
-            calculateConversionIncrease(calculatedTotalSample);
+            calculateConversionIncrease(calculatedTotalSample, experimentDays);
             showConversionIncreaseSection();
         }
 
@@ -1178,6 +1178,9 @@ P值：${pValue.toFixed(4)}
                         experimentDays = 1;
                     }
                 }
+                
+                // 重新绑定点击事件
+                display.addEventListener('click', editExperimentDays);
                 
                 // 触发重新计算转化数
                 if (currentGrouping) {
