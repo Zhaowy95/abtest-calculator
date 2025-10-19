@@ -1109,19 +1109,14 @@ P值：${pValue.toFixed(4)}
 
         // 编辑实验天数
         function editExperimentDays() {
-            console.log('editExperimentDays 函数被调用');
             const display = document.getElementById('experimentDaysDisplay');
-            if (!display) {
-                console.error('找不到 experimentDaysDisplay 元素');
-                return;
-            }
-            const currentValue = display.textContent;
+            if (!display) return;
             
             // 创建输入框
             const input = document.createElement('input');
             input.type = 'number';
             input.value = ''; // 置空，让用户直接输入
-            input.className = 'text-xl font-bold text-gray-800 text-center w-full border-none outline-none bg-transparent';
+            input.className = 'text-xl font-bold text-gray-800 text-center w-full border-2 border-blue-500 rounded px-2 py-1 outline-none bg-white';
             input.min = '1';
             input.placeholder = '输入天数';
             
@@ -1129,6 +1124,7 @@ P值：${pValue.toFixed(4)}
             display.innerHTML = '';
             display.appendChild(input);
             input.focus();
+            input.select();
             
             // 处理输入完成
             const handleComplete = () => {
@@ -1140,11 +1136,12 @@ P值：${pValue.toFixed(4)}
                     experimentDays = 1;
                 } else {
                     const value = parseInt(inputValue);
-                    if (value && value > 0) {
+                    if (value && value > 0 && value <= 365) { // 限制最大365天
                         experimentDays = value;
                         display.textContent = value;
                     } else {
-                        // 输入无效，恢复默认值
+                        // 输入无效，显示错误提示并恢复默认值
+                        showError('请输入1-365之间的整数');
                         display.textContent = '1';
                         experimentDays = 1;
                     }
@@ -1160,13 +1157,14 @@ P值：${pValue.toFixed(4)}
             };
             
             // 绑定事件 - 点击空白区域或按Enter键完成输入
-            document.addEventListener('click', function clickOutside(e) {
+            const clickOutside = (e) => {
                 if (!input.contains(e.target)) {
                     handleComplete();
                     document.removeEventListener('click', clickOutside);
                 }
-            });
+            };
             
+            document.addEventListener('click', clickOutside);
             input.addEventListener('blur', handleComplete);
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -1177,40 +1175,37 @@ P值：${pValue.toFixed(4)}
 
         // 编辑实际样本总量
         function editTotalSample() {
-            console.log('editTotalSample 函数被调用');
             const display = document.getElementById('totalSampleDisplay');
-            if (!display) {
-                console.error('找不到 totalSampleDisplay 元素');
-                return;
-            }
-            const currentValue = display.textContent;
+            if (!display) return;
             
+            const currentValue = display.textContent;
             if (currentValue === '-') return; // 如果没有数据，不进行编辑
             
-            // 获取对照组样本数和实验组比例
+            // 获取对照组样本数和当前实验组比例
             if (!currentGrouping) return;
             
             const controlSample = currentGrouping.groupA.sample;
-            const experimentRatio = parseFloat(experimentRatioInput.value);
+            const currentRatio = parseFloat(experimentRatioInput.value) || 50;
             
             // 创建公式显示：=对照组数值/比例%
             const formula = document.createElement('div');
-            formula.className = 'text-xl font-bold text-gray-800 text-center cursor-pointer';
-            formula.innerHTML = `=${controlSample}/<span id="ratioInput" contenteditable="true"></span>%`;
+            formula.className = 'text-xl font-bold text-gray-800 text-center';
+            formula.innerHTML = `=${controlSample.toLocaleString()}/<span id="ratioInput" contenteditable="true" style="border: 2px solid #3b82f6; border-radius: 4px; padding: 2px 4px; display: inline-block; min-width: 30px; outline: none; background: white;">${currentRatio}</span>%`;
             
             // 替换显示内容
             display.innerHTML = '';
             display.appendChild(formula);
             
-            // 让比例部分可编辑
+            // 让比例部分可编辑并聚焦
             const ratioSpan = document.getElementById('ratioInput');
-            ratioSpan.style.outline = 'none';
-            ratioSpan.style.border = '1px solid #3b82f6';
-            ratioSpan.style.borderRadius = '4px';
-            ratioSpan.style.padding = '2px 4px';
-            ratioSpan.style.display = 'inline-block';
-            ratioSpan.style.minWidth = '30px';
             ratioSpan.focus();
+            
+            // 选中当前数值，方便用户直接输入
+            const range = document.createRange();
+            range.selectNodeContents(ratioSpan);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
             
             // 处理输入完成
             const handleComplete = () => {
@@ -1245,7 +1240,8 @@ P值：${pValue.toFixed(4)}
                             calculateConversionIncrease(newTotalSample);
                         }
                     } else {
-                        // 输入无效，恢复原数值
+                        // 输入无效，显示错误提示并恢复原数值
+                        showError('请输入0-100之间的比例值');
                         display.innerHTML = '';
                         display.className = 'text-xl font-bold text-gray-800 cursor-pointer';
                         display.textContent = currentValue;
@@ -1254,74 +1250,65 @@ P值：${pValue.toFixed(4)}
             };
             
             // 绑定事件 - 点击空白区域或按Enter键完成输入
-            document.addEventListener('click', function clickOutside(e) {
+            const clickOutside = (e) => {
                 if (!formula.contains(e.target)) {
                     handleComplete();
                     document.removeEventListener('click', clickOutside);
                 }
-            });
+            };
             
+            document.addEventListener('click', clickOutside);
             ratioSpan.addEventListener('blur', handleComplete);
             ratioSpan.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     handleComplete();
                 }
             });
+            
+            // 限制输入只能是数字和小数点，并限制范围
+            ratioSpan.addEventListener('input', (e) => {
+                let value = e.target.textContent.replace(/[^0-9.]/g, '');
+                
+                // 确保只有一个小数点
+                const parts = value.split('.');
+                if (parts.length > 2) {
+                    value = parts[0] + '.' + parts.slice(1).join('');
+                }
+                
+                // 限制小数位数
+                if (parts.length === 2 && parts[1].length > 2) {
+                    value = parts[0] + '.' + parts[1].substring(0, 2);
+                }
+                
+                // 限制范围0-100
+                const numValue = parseFloat(value);
+                if (numValue > 100) {
+                    value = '100';
+                }
+                
+                e.target.textContent = value;
+            });
         }
 
-        // 立即绑定事件监听器（不等待DOMContentLoaded）
+        // 绑定点击事件监听器
         function bindClickEvents() {
-            console.log('开始绑定点击事件');
-            
-            // 绑定实验天数点击事件
-            const experimentDaysDisplay = document.getElementById('experimentDaysDisplay');
-            if (experimentDaysDisplay) {
-                experimentDaysDisplay.addEventListener('click', function() {
-                    console.log('实验天数点击事件触发');
+            // 使用事件委托，监听整个文档的点击事件
+            document.addEventListener('click', function(e) {
+                // 实验天数点击事件
+                if (e.target && e.target.id === 'experimentDaysDisplay') {
                     editExperimentDays();
-                });
-                console.log('实验天数事件监听器绑定成功');
-            } else {
-                console.error('找不到 experimentDaysDisplay 元素');
-            }
-
-            // 绑定实际样本总量点击事件
-            const totalSampleDisplay = document.getElementById('totalSampleDisplay');
-            if (totalSampleDisplay) {
-                totalSampleDisplay.addEventListener('click', function() {
-                    console.log('实际样本总量点击事件触发');
+                }
+                // 实际样本总量点击事件
+                else if (e.target && e.target.id === 'totalSampleDisplay') {
                     editTotalSample();
-                });
-                console.log('实际样本总量事件监听器绑定成功');
-            } else {
-                console.error('找不到 totalSampleDisplay 元素');
-            }
+                }
+            });
         }
         
         // 页面加载完成后绑定事件监听器
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM加载完成，绑定事件');
             bindClickEvents();
         });
-        
-        // 如果DOM已经加载完成，立即绑定
-        if (document.readyState === 'loading') {
-            // DOM还在加载中，等待DOMContentLoaded事件
-        } else {
-            // DOM已经加载完成，立即绑定
-            console.log('DOM已经加载完成，立即绑定事件');
-            bindClickEvents();
-        }
-        
-        // 测试函数是否可用
-        console.log('editExperimentDays 函数可用:', typeof editExperimentDays);
-        console.log('editTotalSample 函数可用:', typeof editTotalSample);
-        
-        // 延迟绑定（确保所有代码都加载完成）
-        setTimeout(function() {
-            console.log('延迟绑定事件');
-            bindClickEvents();
-        }, 100);
     </script>
 </body>
 </html>
