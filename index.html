@@ -373,6 +373,7 @@
             dataInput.addEventListener('paste', debouncedDataInput);
             experimentRatioInput.addEventListener('input', debouncedRatioInput);
             experimentRatioInput.addEventListener('focus', handleExperimentRatioFocus);
+            experimentRatioInput.addEventListener('blur', handleExperimentRatioBlur);
             totalSampleInput.addEventListener('input', handleTotalSampleInput);
             totalSampleInput.addEventListener('focus', handleTotalSampleFocus);
             smartGroupBtn.addEventListener('click', toggleGrouping);
@@ -401,8 +402,23 @@
 
         // 处理实验组比例输入框焦点（点击时清空）
         function handleExperimentRatioFocus() {
-            // 情况3：用户点击输入框时，自动清空比例数值
+            // 用户点击输入框时，自动清空比例数值
             experimentRatioInput.value = '';
+        }
+
+        // 处理实验组比例输入框失焦（输入完成时恢复默认值）
+        function handleExperimentRatioBlur() {
+            const value = experimentRatioInput.value.trim();
+            if (value === '') {
+                // 用户置空，恢复默认值50
+                experimentRatioInput.value = '50';
+            } else {
+                const numValue = parseFloat(value);
+                if (!numValue || numValue < 1 || numValue > 99) {
+                    // 输入无效，恢复默认值50
+                    experimentRatioInput.value = '50';
+                }
+            }
         }
 
         // 处理实际样本总量输入框焦点（点击时清空）
